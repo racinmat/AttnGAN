@@ -11,7 +11,7 @@ from PIL import Image
 import torch.onnx
 from datetime import datetime
 from torch.autograd import Variable
-from miscc.config import cfg
+from miscc.config import cfg, cfg_from_file
 from miscc.utils import build_super_images2
 from model import RNN_ENCODER, G_NET
 
@@ -23,6 +23,8 @@ else:
 from cachelib import SimpleCache
 
 cache = SimpleCache()
+
+cfg_from_file(r'E:\Projects\digital_writer\AttnGAN\code\cfg\eval_coco.yml')
 
 
 def vectorize_caption(wordtoix, caption, copies=2):
@@ -109,9 +111,9 @@ def generate(caption, wordtoix, ixtoword, text_encoder, netG, copies=2):
 
             # save image to stream
             if copies > 2:
-                blob_name = '%s/%d/%s_g%d.png' % (prefix, j, "bird", k)
+                blob_name = osp.join(prefix, str(j), f'coco_g{k}.png')
             else:
-                blob_name = '%s/%s_g%d.png' % (prefix, "bird", k)
+                blob_name = osp.join(prefix, f'coco_g{k}.png')
             os.makedirs(osp.dirname(blob_name), exist_ok=True)
             im.save(blob_name, format="png")
 
@@ -149,7 +151,7 @@ def word_index():
     if ixtoword is None or wordtoix is None:
         # print("ix and word not cached")
         # load word to index dictionary
-        x = pickle.load(open('data/captions.pickle', 'rb'))
+        x = pickle.load(open(osp.join(cfg.DATA_DIR, 'captions.pickle'), 'rb'))
         ixtoword = x[2]
         wordtoix = x[3]
         del x
@@ -198,7 +200,7 @@ def eval(caption):
 
 
 if __name__ == "__main__":
-    caption = "the bird with long beak"
+    caption = "Light intensifies, blinds, contours dissolve, fades like faces in an old photograph"
 
     # load configuration
     # cfg_from_file('eval_bird.yml')

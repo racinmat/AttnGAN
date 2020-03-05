@@ -20,7 +20,7 @@ def create_coco():
     caption = request.json['caption']
 
     t0 = time.time()
-    paths = generate(caption, wordtoix, ixtoword, text_encoder, netG)
+    paths = generate(caption, wordtoix, ixtoword, text_encoder, netG, copies=1)
     base_path = osp.dirname(__file__)
     rel_paths = [osp.relpath(f, base_path) for f in paths]
     t1 = time.time()

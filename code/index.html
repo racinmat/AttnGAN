@@ -17,15 +17,19 @@
             crossorigin="anonymous"></script>
 </head>
 <body>
-
+<div class="container">
+    <div class="row">
 <form>
     <div class="form-group">
         <label>Caption:
-            <textarea class="form-control" name="caption"></textarea>
+            <textarea rows="6" cols="100" class="form-control" name="caption"></textarea>
         </label>
-        <button type="submit" class="btn btn-primary">Generate</button>
+    </div>
+    <div class="form-group">
+    <button type="submit" class="btn btn-primary">Generate</button>
     </div>
 </form>
+    </div>
 <div>
     Results:
     <div>
@@ -62,5 +66,6 @@
         event.preventDefault();
     });
 </script>
+</div>
 </body>
 </html>

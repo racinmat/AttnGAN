@@ -97,6 +97,7 @@ def generate(caption, wordtoix, ixtoword, text_encoder, netG, copies=2):
     # G attention
     cap_lens_np = cap_lens.cpu().data.numpy()
 
+    paths = []
     # storing to blob storage
     prefix = osp.join(osp.dirname(__file__), 'images', datetime.now().strftime('%Y/%B/%d/%H_%M_%S_%f'))
     # only look at first one
@@ -116,6 +117,7 @@ def generate(caption, wordtoix, ixtoword, text_encoder, netG, copies=2):
                 blob_name = osp.join(prefix, f'coco_g{k}.png')
             os.makedirs(osp.dirname(blob_name), exist_ok=True)
             im.save(blob_name, format="png")
+            paths.append(blob_name)
 
             if copies == 2:
                 for k in range(len(attention_maps)):
@@ -139,11 +141,12 @@ def generate(caption, wordtoix, ixtoword, text_encoder, netG, copies=2):
                         blob_name = '%s/%s_a%d.png' % (prefix, "attmaps", k)
                         os.makedirs(osp.dirname(blob_name), exist_ok=True)
                         im.save(blob_name, format="png")
+                        paths.append(blob_name)
         if copies == 2:
             break
 
     # print(len(urls), urls)
-
+    return paths
 
 def word_index():
     ixtoword = cache.get('ixtoword')

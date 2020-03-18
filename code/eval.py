@@ -119,31 +119,28 @@ def generate(caption, wordtoix, ixtoword, text_encoder, netG, copies=2):
             im.save(blob_name, format="png")
             paths.append(blob_name)
 
-            if copies == 2:
-                for k in range(len(attention_maps)):
-                    # if False:
-                    if len(fake_imgs) > 1:
-                        im = fake_imgs[k + 1].detach().cpu()
-                    else:
-                        im = fake_imgs[0].detach().cpu()
+        for k in range(len(attention_maps)):
+            # if False:
+            if len(fake_imgs) > 1:
+                im = fake_imgs[k + 1].detach().cpu()
+            else:
+                im = fake_imgs[0].detach().cpu()
 
-                    attn_maps = attention_maps[k]
-                    att_sze = attn_maps.size(2)
+            attn_maps = attention_maps[k]
+            att_sze = attn_maps.size(2)
 
-                    img_set, sentences = \
-                        build_super_images2(im[j].unsqueeze(0),
-                                            captions[j].unsqueeze(0),
-                                            [cap_lens_np[j]], ixtoword,
-                                            [attn_maps[j]], att_sze)
+            img_set, sentences = \
+                build_super_images2(im[j].unsqueeze(0),
+                                    captions[j].unsqueeze(0),
+                                    [cap_lens_np[j]], ixtoword,
+                                    [attn_maps[j]], att_sze)
 
-                    if img_set is not None:
-                        im = Image.fromarray(img_set)
-                        blob_name = '%s/%s_a%d.png' % (prefix, "attmaps", k)
-                        os.makedirs(osp.dirname(blob_name), exist_ok=True)
-                        im.save(blob_name, format="png")
-                        paths.append(blob_name)
-        if copies == 2:
-            break
+            if img_set is not None:
+                im = Image.fromarray(img_set)
+                blob_name = '%s/%s_a%d.png' % (prefix, "attmaps", k)
+                os.makedirs(osp.dirname(blob_name), exist_ok=True)
+                im.save(blob_name, format="png")
+                paths.append(blob_name)
 
     # print(len(urls), urls)
     return paths

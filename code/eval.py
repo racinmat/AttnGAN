@@ -14,6 +14,7 @@ from torch.autograd import Variable
 from miscc.config import cfg, cfg_from_file
 from miscc.utils import build_super_images2
 from model import RNN_ENCODER, G_NET
+from ISR.models import RDN
 
 if sys.version_info[0] == 2:
     import cPickle as pickle
@@ -25,6 +26,7 @@ from cachelib import SimpleCache
 cache = SimpleCache()
 
 cfg_from_file(r'E:\Projects\digital_writer\AttnGAN\code\cfg\eval_coco.yml')
+rdn = RDN(weights='psnr-small')
 
 
 def vectorize_caption(wordtoix, caption, copies=2):
@@ -108,6 +110,9 @@ def generate(caption, wordtoix, ixtoword, text_encoder, netG, copies=2):
             im = (im + 1.0) * 127.5
             im = im.astype(np.uint8)
             im = np.transpose(im, (1, 2, 0))
+            im = rdn.predict(im)
+            im = rdn.predict(im)
+
             im = Image.fromarray(im)
 
             # save image to stream

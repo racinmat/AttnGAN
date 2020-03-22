@@ -5,45 +5,16 @@ import random
 import yaml
 
 from eval import *
-from flask import Flask, jsonify, request, abort
 from miscc.config import cfg
-from flask_cors import CORS
-
-# from werkzeug.contrib.profiler import ProfilerMiddleware
-
-app = Flask(__name__)
-CORS(app)
-
-
-def create_coco():
-    if not request.json or not 'caption' in request.json:
-        abort(400)
-
-    caption = request.json['caption']
-
-    t0 = time.time()
-    paths = generate_and_save(caption, wordtoix, ixtoword, text_encoder, netG, copies=1)
-    base_path = osp.dirname(__file__)
-    rel_paths = [osp.relpath(f, base_path) for f in paths]
-    t1 = time.time()
-
-    response = {
-        'small': rel_paths[0],
-        'medium': rel_paths[1],
-        'large': rel_paths[2],
-        'map1': rel_paths[3],
-        'map2': rel_paths[4],
-        'caption': caption,
-        'elapsed': t1 - t0
-    }
-    return jsonify(response), 201
+from ISR.models import RDN
 
 
 if __name__ == '__main__':
     with open('../data/eng_texts.yml', 'r') as f:
         texts = yaml.safe_load(f)
-    print(texts)
+    base_path = osp.dirname(__file__)
     sentences_dict = {k: [x + '.' for x in v.split('.')] for k, v in texts.items()}
+    rdn = RDN(weights='psnr-small')
 
     cfg.CUDA = True
 
@@ -60,18 +31,15 @@ if __name__ == '__main__':
     if cfg.CUDA:
         torch.cuda.manual_seed_all(seed)
 
-    for name, sentences in sentences_dict:
+    for name, sentences in sentences_dict.items():
         for i, sentence in enumerate(sentences):
-            paths = generate_and_save(caption, wordtoix, ixtoword, text_encoder, netG, copies=1)
-            base_path = osp.dirname(__file__)
-            rel_paths = [osp.relpath(f, base_path) for f in paths]
-            response = {
-                'small': rel_paths[0],
-                'medium': rel_paths[1],
-                'large': rel_paths[2],
-                'map1': rel_paths[3],
-                'map2': rel_paths[4],
-                'caption': caption,
-                'elapsed': t1 - t0
-            }
+            names2images = generate(sentence, wordtoix, ixtoword, text_encoder, netG, copies=1)
+            small_img = names2images['coco_g2']
+            sr_img = rdn.predict(small_img)
+            sr2_img = rdn.predict(sr_img)
+            im_res = Image.fromarray(sr2_img)
+            image_path = osp.join(base_path, name, f'{sentence}.png')
+            os.makedirs(osp.dirname(image_path), exist_ok=True)
+            im_res.save(image_path, format='png')
+
             print(f'done {i}-th text in {name}.')

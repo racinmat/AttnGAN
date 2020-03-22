@@ -2,7 +2,8 @@ CONFIG_NAME: 'attn2'
 
 DATASET_NAME: 'coco'
 DATA_DIR: '../data/coco'
-GPU_ID: 3
+CUDA: True
+GPU_ID: 0
 WORKERS: 1
 
 B_VALIDATION: False

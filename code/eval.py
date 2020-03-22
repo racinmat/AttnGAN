@@ -14,6 +14,7 @@ from torch.autograd import Variable
 from miscc.config import cfg, cfg_from_file
 from miscc.utils import build_super_images2
 from model import RNN_ENCODER, G_NET
+import tensorflow as tf
 from ISR.models import RDN
 
 if sys.version_info[0] == 2:
@@ -26,7 +27,15 @@ from cachelib import SimpleCache
 cache = SimpleCache()
 
 cfg_from_file(r'E:\Projects\digital_writer\AttnGAN\code\cfg\eval_coco.yml')
-rdn = RDN(weights='psnr-small')
+
+# otherwise it allocates all memory and no memory is left for pytorch
+gpu_devices = tf.config.experimental.list_physical_devices('GPU')
+tf.config.experimental.set_memory_growth(gpu_devices[0], True)
+config = tf.compat.v1.ConfigProto()
+config.gpu_options.allow_growth = True
+session = tf.compat.v1.Session(config=config)
+rdn = RDN(weights='psnr-large')
+# rdn = RDN(weights='psnr-small')
 
 
 def vectorize_caption(wordtoix, caption, copies=2):

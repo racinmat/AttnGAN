@@ -55,7 +55,6 @@ def vectorize_caption(wordtoix, caption, copies=2):
 def generate(caption, wordtoix, ixtoword, text_encoder, netG, copies=2):
     # load word vector
     captions, cap_lens = vectorize_caption(wordtoix, caption, copies)
-    n_words = len(wordtoix)
 
     # only one to generate
     batch_size = captions.shape[0]
@@ -84,26 +83,11 @@ def generate(caption, wordtoix, ixtoword, text_encoder, netG, copies=2):
     noise.data.normal_(0, 1)
     fake_imgs, attention_maps, _, _ = netG(noise, sent_emb, words_embs, mask)
 
-    # ONNX EXPORT
-    # export = os.environ["EXPORT_MODEL"].lower() == 'true'
-    if False:
-        print("saving text_encoder.onnx")
-        torch.onnx._export(text_encoder, (captions, cap_lens, hidden), "text_encoder.onnx", export_params=True)
-        print("done")
-
-        print("saving netg.onnx")
-        torch.onnx._export(netG, (noise, sent_emb, words_embs, mask), "netg.onnx", export_params=True)
-        print("done")
-        return
-
     # G attention
     cap_lens_np = cap_lens.cpu().data.numpy()
 
-    paths = []
-    # storing to blob storage
-    prefix = osp.join(osp.dirname(__file__), 'images', datetime.now().strftime('%Y/%B/%d/%H_%M_%S_%f'))
-    # only look at first one
-    # j = 0
+    names2images = {}
+
     for j in range(batch_size):
         for k in range(len(fake_imgs)):
             im = fake_imgs[k][j].data.cpu().numpy()
@@ -113,19 +97,14 @@ def generate(caption, wordtoix, ixtoword, text_encoder, netG, copies=2):
             im = rdn.predict(im)
             im = rdn.predict(im)
 
-            im = Image.fromarray(im)
-
             # save image to stream
             if copies > 2:
-                blob_name = osp.join(prefix, str(j), f'coco_g{k}.png')
+                blob_name = osp.join(str(j), f'coco_g{k}.png')
             else:
-                blob_name = osp.join(prefix, f'coco_g{k}.png')
-            os.makedirs(osp.dirname(blob_name), exist_ok=True)
-            im.save(blob_name, format="png")
-            paths.append(blob_name)
+                blob_name = f'coco_g{k}.png'
+            names2images[blob_name] = im
 
         for k in range(len(attention_maps)):
-            # if False:
             if len(fake_imgs) > 1:
                 im = fake_imgs[k + 1].detach().cpu()
             else:
@@ -141,14 +120,27 @@ def generate(caption, wordtoix, ixtoword, text_encoder, netG, copies=2):
                                     [attn_maps[j]], att_sze)
 
             if img_set is not None:
-                im = Image.fromarray(img_set)
-                blob_name = '%s/%s_a%d.png' % (prefix, "attmaps", k)
-                os.makedirs(osp.dirname(blob_name), exist_ok=True)
-                im.save(blob_name, format="png")
-                paths.append(blob_name)
+                blob_name = f'attmaps_a{k}.png'
+                names2images[blob_name] = img_set
 
-    # print(len(urls), urls)
+    return names2images
+
+
+def generate_and_save(caption, wordtoix, ixtoword, text_encoder, netG, copies=2):
+    prefix = osp.join(osp.dirname(__file__), 'images', datetime.now().strftime('%Y/%B/%d/%H_%M_%S_%f'))
+    names2images = generate(caption, wordtoix, ixtoword, text_encoder, netG, copies)
+
+    # load word vector
+    paths = []
+    for name, image in names2images.items():
+        im = Image.fromarray(image)
+        blob_name = osp.join(prefix, name)
+        os.makedirs(osp.dirname(blob_name), exist_ok=True)
+        im.save(blob_name, format="png")
+        paths.append(blob_name)
+
     return paths
+
 
 def word_index():
     ixtoword = cache.get('ixtoword')
@@ -200,7 +192,7 @@ def eval(caption):
     text_encoder, netG = models(len(wordtoix))
     # load blob service
     t0 = time.time()
-    generate(caption, wordtoix, ixtoword, text_encoder, netG)
+    generate_and_save(caption, wordtoix, ixtoword, text_encoder, netG)
     t1 = time.time()
 
 
@@ -216,7 +208,7 @@ if __name__ == "__main__":
     # load blob service
 
     t0 = time.time()
-    urls = generate(caption, wordtoix, ixtoword, text_encoder, netG)
+    urls = generate_and_save(caption, wordtoix, ixtoword, text_encoder, netG)
     t1 = time.time()
     print(t1 - t0)
     print(urls)

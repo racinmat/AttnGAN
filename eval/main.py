@@ -21,7 +21,7 @@ def create_bird():
     caption = request.json['caption']
 
     t0 = time.time()
-    urls = generate(caption, wordtoix, ixtoword, text_encoder, netG, blob_service)
+    urls = generate_and_save(caption, wordtoix, ixtoword, text_encoder, netG, blob_service)
     t1 = time.time()
 
     response = {
@@ -43,7 +43,7 @@ def create_birds():
     caption = request.json['caption']
 
     t0 = time.time()
-    urls = generate(caption, wordtoix, ixtoword, text_encoder, netG, blob_service, copies=6)
+    urls = generate_and_save(caption, wordtoix, ixtoword, text_encoder, netG, blob_service, copies=6)
     t1 = time.time()
 
     response = {
